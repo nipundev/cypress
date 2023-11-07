@@ -7,7 +7,7 @@ const browser = require('webextension-polyfill')
 const { cookieMatches } = require('@packages/server/lib/automation/util')
 
 const client = require('./client')
-const util = require('../lib/util')
+const util = require('../../lib/util')
 
 const COOKIE_PROPS = ['url', 'name', 'path', 'secure', 'domain']
 const GET_ALL_PROPS = COOKIE_PROPS.concat(['session', 'storeId'])
@@ -51,11 +51,19 @@ const connect = function (host, path, extraOpts) {
     })
 
     browser.downloads.onChanged.addListener((downloadDelta) => {
-      if ((downloadDelta.state || {}).current !== 'complete') return
+      const state = (downloadDelta.state || {}).current
 
-      ws.emit('automation:push:request', 'complete:download', {
-        id: `${downloadDelta.id}`,
-      })
+      if (state === 'complete') {
+        ws.emit('automation:push:request', 'complete:download', {
+          id: `${downloadDelta.id}`,
+        })
+      }
+
+      if (state === 'canceled') {
+        ws.emit('automation:push:request', 'canceled:download', {
+          id: `${downloadDelta.id}`,
+        })
+      }
     })
   })
 
